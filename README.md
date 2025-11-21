@@ -2,15 +2,48 @@
 
 ## Overview
 
-This repository documents my self-hosted home lab infrastructure built using Proxmox VE. The goal of this project is to reduce reliance on cloud providers by self-hosting essential services, learn enterprise-level networking and system administration, and provide a testing playground for full-stack applications and infrastructure tooling.
+This repository documents my self-hosted home lab infrastructure built using Proxmox VE. The goal of this project is to reduce reliance on cloud providers by self-hosting essential services, learn enterprise-level networking and system administration, and provide a robust testing and development playground for full-stack applications and infrastructure tooling.
 
 ---
 
-## Architecture Diagram
+## Architecture Overview
 
-![Architecture Diagram](./imgs/arch-sketch.png)
+My homelab is designed with a layered approach, emphasizing security, isolation, and scalability. It's built on a Proxmox VE hypervisor, with OPNsense acting as the core firewall and router. Services are deployed across a mix of full Virtual Machines (VMs) for isolation and lightweight Linux Containers (LXCs) for efficiency.
 
-This diagram represents the current state of the home lab, where my ISP router provides a 172.16.1.x WAN address to the Proxmox machine. Inside Proxmox, OPNsense handles all routing, VPN, firewall, and DNS-level ad-blocking. Internal services are assigned 192.168.1.x addresses and hosted in isolated VMs.
+```mermaid
+graph TD
+    subgraph "External Network"
+        Internet
+    end
+
+    subgraph "Homelab Physical Host (Proxmox VE)"
+        OPNsense(OPNsense Firewall/Router)
+        
+        subgraph "Virtualization Layer"
+            VMs[Virtual Machines]
+            LXCs[LXC Containers]
+        end
+    end
+
+    subgraph "Homelab Services"
+        direction LR
+        APIServer[Application Services]
+        CICD[CI/CD & Automation]
+        Monitoring[Monitoring & Security]
+        DB[Databases]
+        Networking[Networking Services]
+    end
+
+    Internet --"WAN"--> OPNsense
+    OPNsense --"LAN / VLANs"--> VMs
+    OPNsense --"LAN / VLANs"--> LXCs
+    
+    VMs -- hosts --> APIServer
+    LXCs -- hosts --> CICD
+    VMs -- hosts --> Monitoring
+    LXCs -- hosts --> DB
+    VMs -- hosts --> Networking
+```
 
 ---
 
@@ -18,72 +51,36 @@ This diagram represents the current state of the home lab, where my ISP router p
 
 - **Cost Savings**: Avoid recurring monthly fees from cloud storage and hosting platforms.
 - **Control**: Full ownership over data, routing rules, and security posture.
-- **Learning**: Hands-on exposure to real-world IT concepts including:
-  - Virtualization with Proxmox
-  - Advanced routing and firewalling using OPNsense
-  - Self-hosting Dockerized web applications
-  - Windows Server and SQL Server administration
-  - DNS filtering and VPN tunneling
+- **Learning**: Hands-on exposure to real-world IT and DevOps concepts including:
+  - Virtualization with Proxmox (VMs and LXCs).
+  - Advanced routing, firewalling, and network segmentation with OPNsense.
+  - CI/CD automation with GitLab Runner and Ansible.
+  - Container orchestration and management with Docker and Portainer.
+  - Cloud-native observability with OpenTelemetry, Grafana, Loki, and Wazuh.
+  - Secure remote access using Cloudflare Tunnels and Tailscale.
 - **Playground Environment**: A reliable sandbox to test, break, and rebuild services without affecting production workflows.
 
 ---
 
-## Current Setup
+## Documentation
 
-- **Router**: ISP device assigning 172.16.1.x addresses
-- **Proxmox Host (Dell OptiPlex)**:
-  - **OPNsense VM**:
-    - WAN: 172.16.1.x
-    - LAN: 192.168.1.x
-    - Services: WireGuard VPN, Firewall, AdGuard DNS
-  - **Ubuntu Server VM**:
-    - Hosts: NGINX reverse proxy, ASP.NET Core Web API
-    - Docker Containers
-  - **Windows Server VM**:
-    - Hosts: Microsoft SQL Server
+This repository is structured to be a comprehensive guide to my homelab. Each major component has its own detailed documentation.
 
----
+*   **[Services](./docs/services.md):** A detailed inventory of all running VMs, containers, and their roles.
+*   **[Networking](./docs/networking.md):** An overview of the network architecture, including OPNsense configuration, VLANs, and firewall rules.
+*   **[Virtualization](./docs/virtualization.md):** Information on the Proxmox VE setup, including host configuration, storage, and management of VMs and LXCs.
+*   **[CI/CD and Automation](./docs/ci-cd.md):** Details on the automation workflows, including GitLab Runner for CI/CD and Ansible for configuration management.
+*   **[Monitoring](./docs/monitoring.md):** A breakdown of the observability stack, used to monitor the health and performance of the lab.
 
-## Planned Expansion
-
-1. **Router Node** (Proxmox)
-   - Dedicated Dell OptiPlex with 2.5Gb NIC
-   - Run OPNsense with VPN, firewall, DNS filtering
-
-2. **Service Host Node** (Proxmox)
-   - Separate machine dedicated to containerized services
-   - Host full-stack apps like CloudCARE
-
-3. **NAS Node** (Proxmox or Bare Metal)
-   - Dell OptiPlex with 10GbE NIC
-   - TrueNAS or Ubuntu + ZFS setup
-   - Provide NFS/SMB storage for backups, media, and services
-
----
-
-## Tech Stack
-
-| Component           | Technology                      |
-|---------------------|----------------------------------|
-| Virtualization      | Proxmox VE                       |
-| Router / Firewall   | OPNsense                         |
-| VPN                 | WireGuard                        |
-| DNS Filtering       | AdGuard Home                     |
-| Web Hosting         | NGINX, Docker                    |
-| Backend Services    | ASP.NET Core Web API             |
-| Database            | SQL Server (Windows VM)          |
-| NAS (Planned)       | TrueNAS / Ubuntu + ZFS           |
-| Networking          | 2.5GbE (router), 10GbE (NAS)     |
-
----
 ---
 
 ## Security Model
 
-- No services exposed directly to the internet
-- All access routed through WireGuard VPN
-- OPNsense manages firewall rules and DNS filtering via AdGuard
-- All services run in isolated VMs or containers
+- **Zero Trust Principles:** No services are exposed directly to the internet.
+- **Encrypted Access:** All remote access is routed through secure, encrypted tunnels (Cloudflare or Tailscale).
+- **Firewall:** OPNsense manages all ingress and egress traffic with a strict firewall ruleset.
+- **Network Segmentation:** Services are isolated on separate VLANs based on their function and trust level.
+- **Security Monitoring:** Wazuh is deployed for Security Information and Event Management (SIEM) and Extended Detection and Response (XDR).
 
 ---
 
